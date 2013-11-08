@@ -40,6 +40,7 @@ END_LEGAL */
 #include <stdint.h>
 #include <LRUDistanceAnalyzer.hpp>
 #include <iostream>
+#include <map>
 //#include "pin.H"
 using namespace std;
 //#define ASSERT_ENABLED
@@ -584,6 +585,21 @@ typedef struct _access_entry {
   void * ip;
 } access_entry;
 
+class BBStats
+{
+private:
+	int* hist; // Probably not an int!
+public:
+	BBStats()
+	{
+		for(int i=0;i<BIN_SIZE;i++)
+		   hist[i]=0;
+	
+	}
+	
+}
+
+
 access_entry buffer[BUFFER_SIZE];
 ULONG buf_size;
 ULLINT counter;
@@ -1026,11 +1042,11 @@ void try_to_add_range(void *data, ULONG bin_pos) {
 }
 
 
-void record_distance(ULLINT dis, void *data) {
+void record_distance(ULLINT dis, int BBID,void *data) {
   ULONG i = 0;
   for (;i<BIN_SIZE-1;i++) {
     if (dis <= upper_boundary[i]) {
-      ++hist[i];
+      BBStats[BBID][i]+=1; //++hist[i];
       try_to_add_range(data, i);
       return;
     }

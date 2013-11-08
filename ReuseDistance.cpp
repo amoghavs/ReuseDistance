@@ -47,9 +47,9 @@ void ReuseDistance::Init(uint64_t w, uint64_t b){
 
     window = newtree234();
     assert(window);
-
+    NumBB=0;
     mwindow.clear();
-
+    LRUDistanceAnalyzer::Init(); // Does this need a protection mechanism?
     assert(ReuseDistance::Infinity == NULL && "NULL is non-zero!?");
 }
 
@@ -103,21 +103,24 @@ void ReuseDistance::Print(bool annotate){
 
 void ReuseDistance::Process(ReuseEntry* rs, uint64_t count){
     for (uint32_t i = 0; i < count; i++){
-        Process(rs[i]);
+        //Process(rs[i]);
+        LRUDistanceAnalyzer::RecordMemAccess((void *)rs[i].address);
     }
 }
 
 void ReuseDistance::Process(vector<ReuseEntry> rs){
     for (vector<ReuseEntry>::const_iterator it = rs.begin(); it != rs.end(); it++){
         ReuseEntry r = *it;
-        Process(r);
+       // Process(r);
+	LRUDistanceAnalyzer::RecordMemAccess((void *)r.address);       
     }
 }
 
 void ReuseDistance::Process(vector<ReuseEntry*> rs){
     for (vector<ReuseEntry*>::const_iterator it = rs.begin(); it != rs.end(); it++){
         ReuseEntry* r = *it;
-        Process((*r));
+       // Process((*r));
+        LRUDistanceAnalyzer::RecordMemAccess((void *)r->address);
     }
 }
 
@@ -136,6 +139,8 @@ void ReuseDistance::SkipAddresses(uint64_t amount){
 }
 
 void ReuseDistance::Process(ReuseEntry& r){
+  LRUDistanceAnalyzer::RecordMemAccess((void*)r.address);
+   return;
     uint64_t addr = r.address;
     uint64_t id = r.id;
     uint64_t mres = mwindow.count(addr);
@@ -214,6 +219,8 @@ void ReuseStats::PrintFormat(ostream& f){
 }
 
 void ReuseDistance::Print(ostream& f, bool annotate){
+    LRUDistanceAnalyzer::OutputResults();
+    return;
     vector<uint64_t> keys;
     for (reuse_map_type<uint64_t, ReuseStats*>::const_iterator it = stats.begin(); it != stats.end(); it++){
         keys.push_back(it->first);
@@ -338,6 +345,8 @@ void ReuseStats::GetSortedDistances(vector<uint64_t>& dkeys){
 }
 
 void ReuseStats::Print(ostream& f, bool annotate){
+   LRUDistanceAnalyzer::OutputResults();
+   return;
     vector<uint64_t> keys;
     GetSortedDistances(keys);
 

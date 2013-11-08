@@ -39,6 +39,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include<LRUDistanceAnalyzer.hpp>
 
 // unordered_map is faster for many things, use it where sorted map isn't needed
 #ifdef HAVE_UNORDERED_MAP
