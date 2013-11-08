@@ -527,14 +527,9 @@ void range_tree::do_subtract(class range_tree *ref_tree) {
 
 /****************END OF RANGE_TREE CLASS*****************/
 
+// CAUTION: In the long run these parameters should be configurable! 
 
-#define ADDR void *
-#define INFINITE (unsigned long int)-1
-#define OFFSET_SIZE 6
-#define BUFFER_SIZE 4194304
-#define BIN_SIZE 32
-#define HASH_TABLE_SIZE 999983
-#define BATCH_ALLOC_SIZE 1024*1024
+
 
 typedef long long hrtime_t;
 
@@ -582,23 +577,8 @@ ULLINT processing_times;
 
 typedef struct _access_entry {
   ADDR addr;
-  void * ip;
+  uint64_t* PINStats;
 } access_entry;
-
-class BBStats
-{
-private:
-	int* hist; // Probably not an int!
-public:
-	BBStats()
-	{
-		for(int i=0;i<BIN_SIZE;i++)
-		   hist[i]=0;
-	
-	}
-	
-}
-
 
 access_entry buffer[BUFFER_SIZE];
 ULONG buf_size;
@@ -1042,11 +1022,12 @@ void try_to_add_range(void *data, ULONG bin_pos) {
 }
 
 
-void record_distance(ULLINT dis, int BBID,void *data) {
+void record_distance(ULLINT dis,void *data,uint64_t* BBStats) {
   ULONG i = 0;
   for (;i<BIN_SIZE-1;i++) {
     if (dis <= upper_boundary[i]) {
-      BBStats[BBID][i]+=1; //++hist[i];
+      ++hist[i];
+      ++BBStats[i];
       try_to_add_range(data, i);
       return;
     }
@@ -1075,7 +1056,7 @@ void comp_lru_reuse_dis() {
     else
       fprintf(stderr, "LRU reuse dis: %llu\n", lru_reuse_dis);
 #endif
-    record_distance(lru_reuse_dis, buffer[i].addr);
+    record_distance(lru_reuse_dis, buffer[i].addr,buffer[i].PINStats);
 #ifdef DEBUG
     fprintf(stderr, "------------\n");
 #endif
@@ -1088,7 +1069,7 @@ static int RecordMemAccessNotcalled=1;
 static int init_notcalled=1;
 
 // Print a memory read record
-VOID RecordMemAccess(VOID * addr) {
+VOID RecordMemAccess(VOID * addr,uint64_t* BBStats) {
 	if(RecordMemAccessNotcalled)
   	{
   		printf("\n\t RecordMemAccess is being called! \n");
@@ -1096,6 +1077,7 @@ VOID RecordMemAccess(VOID * addr) {
   	}
   //addr = (ADDR)((((ULONG)addr)>>OFFSET_SIZE)<<OFFSET_SIZE);
   buffer[buf_size].addr = addr;
+  buffer[buf_size].PINStats=BBStats;
   buf_size++;
   if (buf_size == BUFFER_SIZE) {
     comp_lru_reuse_dis();

@@ -98,7 +98,8 @@ protected:
     // store all stats
     // [id -> stats for this id]
     reuse_map_type<uint64_t, ReuseStats*> stats;
-
+    reuse_map_type<uint64_t,uint64_t*> PINReuseStats;
+    
     uint64_t capacity;
     uint64_t sequence;
     uint64_t binindividual;
@@ -106,6 +107,7 @@ protected:
 
     void Init(uint64_t w, uint64_t b);
     virtual ReuseStats* GetStats(uint64_t id, bool gen);
+    virtual uint64_t* GetPINStats(uint64_t id, bool gen);      
     virtual const std::string Describe() { return "REUSE"; }
 
 public:

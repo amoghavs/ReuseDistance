@@ -47,8 +47,7 @@ void ReuseDistance::Init(uint64_t w, uint64_t b){
 
     window = newtree234();
     assert(window);
-    NumBB=0;
-    mwindow.clear();
+   // mwindow.clear(); //CAUTION: Dangerous practice!! :(
     LRUDistanceAnalyzer::Init(); // Does this need a protection mechanism?
     assert(ReuseDistance::Infinity == NULL && "NULL is non-zero!?");
 }
@@ -62,17 +61,28 @@ ReuseDistance::ReuseDistance(uint64_t w){
 }
 
 ReuseDistance::~ReuseDistance(){
-    for (reuse_map_type<uint64_t, ReuseStats*>::const_iterator it = stats.begin(); it != stats.end(); it++){
+ //   for (reuse_map_type<uint64_t, ReuseStats*>::const_iterator it = stats.begin(); it != stats.end(); it++){
+   //     uint64_t id = it->first;
+     //   delete stats[id];
+    //}
+    
+    for (reuse_map_type<uint64_t, uint64_t*>::const_iterator it = PINReuseStats.begin(); it != PINReuseStats.end(); it++){
         uint64_t id = it->first;
-        delete stats[id];
-    }
+        delete PINReuseStats[id];
+    }    
 
     debug_assert(current == count234(window));
     while (current){
         delete (ReuseEntry*)delpos234(window, 0);
         current--;
     }
-    freetree234(window);
+    freetree234(window); //CAUTION: Dangerous practice!! :( 
+    #ifndef HAVE_UNORDERED_MAP
+	   mwindow.~map(); 
+    #else
+	   mwindow.~unordered_map();            
+    #endif	    
+    cout<<"\n\t Illi!! \n";
 }
 
 uint64_t ReuseStats::GetMissCount(){
@@ -103,24 +113,24 @@ void ReuseDistance::Print(bool annotate){
 
 void ReuseDistance::Process(ReuseEntry* rs, uint64_t count){
     for (uint32_t i = 0; i < count; i++){
-        //Process(rs[i]);
-        LRUDistanceAnalyzer::RecordMemAccess((void *)rs[i].address);
+        Process(rs[i]);
+       // LRUDistanceAnalyzer::RecordMemAccess((void *)rs[i].address);
     }
 }
 
 void ReuseDistance::Process(vector<ReuseEntry> rs){
     for (vector<ReuseEntry>::const_iterator it = rs.begin(); it != rs.end(); it++){
         ReuseEntry r = *it;
-       // Process(r);
-	LRUDistanceAnalyzer::RecordMemAccess((void *)r.address);       
+        Process(r);
+	//LRUDistanceAnalyzer::RecordMemAccess((void *)r.address);       
     }
 }
 
 void ReuseDistance::Process(vector<ReuseEntry*> rs){
     for (vector<ReuseEntry*>::const_iterator it = rs.begin(); it != rs.end(); it++){
         ReuseEntry* r = *it;
-       // Process((*r));
-        LRUDistanceAnalyzer::RecordMemAccess((void *)r->address);
+        Process((*r));
+       // LRUDistanceAnalyzer::RecordMemAccess((void *)r->address);
     }
 }
 
@@ -139,7 +149,8 @@ void ReuseDistance::SkipAddresses(uint64_t amount){
 }
 
 void ReuseDistance::Process(ReuseEntry& r){
-  LRUDistanceAnalyzer::RecordMemAccess((void*)r.address);
+  uint64_t* BBStats= GetPINStats(r.id,true);
+  LRUDistanceAnalyzer::RecordMemAccess((void*)r.address,BBStats);
    return;
     uint64_t addr = r.address;
     uint64_t id = r.id;
@@ -220,6 +231,7 @@ void ReuseStats::PrintFormat(ostream& f){
 
 void ReuseDistance::Print(ostream& f, bool annotate){
     LRUDistanceAnalyzer::OutputResults();
+    cout<<"\n\t Calling OutputResults!! \n";
     return;
     vector<uint64_t> keys;
     for (reuse_map_type<uint64_t, ReuseStats*>::const_iterator it = stats.begin(); it != stats.end(); it++){
@@ -271,6 +283,16 @@ ReuseStats* ReuseDistance::GetStats(uint64_t id, bool gen){
     }
     return s;
 }
+
+uint64_t* ReuseDistance::GetPINStats(uint64_t id, bool gen){
+    uint64_t* s = PINReuseStats[id];
+    if (s == NULL && gen){
+        s = new uint64_t[BIN_SIZE]; //ReuseStats(id, binindividual, capacity, ReuseDistance::Infinity);
+        PINReuseStats[id] = s;
+    }
+    return s;
+}
+
 
 // this should be fast as possible. This code is from http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
 static const uint64_t b[] = {0x2L, 0xCL, 0xF0L, 0xFF00L, 0xFFFF0000L, 0xFFFFFFFF00000000L};
@@ -346,6 +368,7 @@ void ReuseStats::GetSortedDistances(vector<uint64_t>& dkeys){
 
 void ReuseStats::Print(ostream& f, bool annotate){
    LRUDistanceAnalyzer::OutputResults();
+   cout<<"\n\t Calling OutputResults!!! \n";   
    return;
     vector<uint64_t> keys;
     GetSortedDistances(keys);
