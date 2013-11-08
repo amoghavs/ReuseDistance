@@ -90,7 +90,7 @@ private:
     tree234* window;
 
     // [address -> sequence]
-    reuse_map_type<uint64_t, uint64_t> mwindow;
+  //  reuse_map_type<uint64_t, uint64_t> mwindow;
 
     uint64_t current;
 

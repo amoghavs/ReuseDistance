@@ -50,6 +50,7 @@ void ReuseDistance::Init(uint64_t w, uint64_t b){
    // mwindow.clear(); //CAUTION: Dangerous practice!! :(
     LRUDistanceAnalyzer::Init(); // Does this need a protection mechanism?
     assert(ReuseDistance::Infinity == NULL && "NULL is non-zero!?");
+    cout<<"\n\t Reuse Distance's Init!! \n";
 }
 
 ReuseDistance::ReuseDistance(uint64_t w, uint64_t b){
@@ -77,11 +78,7 @@ ReuseDistance::~ReuseDistance(){
         current--;
     }
     freetree234(window); //CAUTION: Dangerous practice!! :( 
-    #ifndef HAVE_UNORDERED_MAP
-	   mwindow.~map(); 
-    #else
-	   mwindow.~unordered_map();            
-    #endif	    
+ 	    
     cout<<"\n\t Illi!! \n";
 }
 
@@ -142,17 +139,18 @@ void ReuseDistance::SkipAddresses(uint64_t amount){
         delete delpos234(window, 0);
         current--;
     }
-    mwindow.clear();
+   // mwindow.clear();
 
-    assert(mwindow.size() == 0);
+   // assert(mwindow.size() == 0);
     assert(count234(window) == 0);
 }
 
 void ReuseDistance::Process(ReuseEntry& r){
   uint64_t* BBStats= GetPINStats(r.id,true);
   LRUDistanceAnalyzer::RecordMemAccess((void*)r.address,BBStats);
+  //cout<<"\n\t Processed the address!! \n";
    return;
-    uint64_t addr = r.address;
+/*    uint64_t addr = r.address;
     uint64_t id = r.id;
     uint64_t mres = mwindow.count(addr);
 
@@ -198,7 +196,7 @@ void ReuseDistance::Process(ReuseEntry& r){
     debug_assert(count234(window) == mwindow.size());
     debug_assert(mwindow.size() <= current);
 
-    sequence++;
+    sequence++; */
 }
 
 void ReuseDistance::PrintFormat(ostream& f){
@@ -230,8 +228,34 @@ void ReuseStats::PrintFormat(ostream& f){
 }
 
 void ReuseDistance::Print(ostream& f, bool annotate){
-    LRUDistanceAnalyzer::OutputResults();
     cout<<"\n\t Calling OutputResults!! \n";
+    LRUDistanceAnalyzer::OutputResults();
+    uint64_t total=0;
+    uint64_t BinStats[BIN_SIZE];
+    for(int i=0;i<BIN_SIZE;i++)
+       BinStats[i]=0;
+for(reuse_map_type<uint64_t,uint64_t*>::const_iterator it=PINReuseStats.begin(); it!=PINReuseStats.end();it++)    
+{
+	cout<<"\n\t BB: "<<dec<<it->first<<"\n";
+	for(int i=0;i<BIN_SIZE;i++)
+	{
+		if(it->second[i])
+		{
+		   cout<<"\n\t I: "<<i<<" Hits: "<<it->second[i];
+		   total+=it->second[i];
+		   BinStats[i]+=it->second[i];
+		}
+	
+	}
+
+}
+	for(int i=0;i<BIN_SIZE;i++)
+	{
+	    if(BinStats[i])
+	    cout<<"\n\t Bin: "<<i<<"\t Hits: "<<BinStats[i];
+	}
+	cout<<"\n\t Total hits: "<<total<<"\n";
+    
     return;
     vector<uint64_t> keys;
     for (reuse_map_type<uint64_t, ReuseStats*>::const_iterator it = stats.begin(); it != stats.end(); it++){

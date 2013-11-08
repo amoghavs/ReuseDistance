@@ -1039,8 +1039,9 @@ void record_distance(ULLINT dis,void *data,uint64_t* BBStats) {
 void comp_lru_reuse_dis() {
   ULONG i;
   hrtime_t temp;
-  if (processing_times % 128 == 0)
-    fprintf(stderr, "doing No.%llu buffer processing\n", processing_times);
+ // if (processing_times % 128 == 0)
+  //  fprintf(stderr, "doing No.%llu buffer processing\n", processing_times);
+  printf("doing No.%llu buffer processing\n", processing_times);
   ++processing_times;
   temp = gethrcycle_x86();
   for (i=0;i<buf_size;i++) {
@@ -1234,7 +1235,7 @@ void Init() {
 	if(init_notcalled)
 	{
 		std::cout<<"\n\t Init is being called! \n";
-		init_notcalled=0;
+		init_notcalled=1;
 	}
 	else
 		std::cout<<"\n\t Init is being called while init_notcalled=0 !! \n";
